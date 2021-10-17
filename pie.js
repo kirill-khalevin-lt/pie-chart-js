@@ -1,14 +1,5 @@
 //Code collected from https://code.tutsplus.com/ru/tutorials/how-to-draw-a-pie-chart-and-doughnut-chart-using-javascript-and-html5-canvas--cms-27197
 
-function drawPieSlice(ctx,centerX, centerY, radius, startAngle, endAngle, color ){
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(centerX,centerY);
-    ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-    ctx.closePath();
-    ctx.fill();
-}
-
 class Piechart{
     constructor(options)
     {
@@ -17,13 +8,46 @@ class Piechart{
         this.canvas = options.canvas;
         this.ctx = this.canvas.getContext("2d");
         this.colors = options.colors.concat(this.pie_colors_default);
-        console.log(this.colors)
         this.shaded_colors = this.colors.map(function(color) { return shadeColor(color, -20); } );
     }
+
+    drawPieSlice(ctx,centerX, centerY, radius, startAngle, endAngle, color ){
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(centerX,centerY);
+        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    //  https://github.com/lipka/piecon
+
+    removeFaviconTag(){
+        var links = Array.prototype.slice.call(document.getElementsByTagName('link'), 0);
+        var head = document.getElementsByTagName('head')[0];
+
+        for (var i = 0, l = links.length; i < l; i++) {
+            if (links[i].getAttribute('rel') === 'icon' || links[i].getAttribute('rel') === 'shortcut icon') {
+                head.removeChild(links[i]);
+            }
+        }
+    };
+
+    setFaviconTag(){
+        this.removeFaviconTag();
+
+        var link = document.createElement('link');
+        link.type = 'image/x-icon';
+        link.rel = 'icon';
+        link.href = this.canvas.toDataURL();
+
+        document.getElementsByTagName('head')[0].appendChild(link);
+    };
 
     draw(){
         var total_value = 0;
         var shift = 10;
+        var coef_padding = 0.03
 
         var canvas_width = this.canvas.width;
         var canvas_height = this.canvas.height;
@@ -41,11 +65,11 @@ class Piechart{
                 var slice_angle = 2 * Math.PI * val / total_value;
 
                 var current_colors = shift == 0 ? this.colors : this.shaded_colors;
-                drawPieSlice(
+                this.drawPieSlice(
                     this.ctx,
                     canvas_width/2-shift,
                     canvas_height/2+shift,
-                    Math.min(canvas_width/2-canvas_width*0.1,canvas_height/2-canvas_height*0.1),
+                    Math.min(canvas_width/2-canvas_width*coef_padding,canvas_height/2-canvas_height*coef_padding),
                     start_angle,
                     start_angle+slice_angle,
                     current_colors[color_index%this.colors.length]
@@ -63,8 +87,9 @@ class Piechart{
             slice_angle = 2 * Math.PI * val / total_value;
             var pieRadius = Math.min(canvas_width/2,canvas_height/2);
             var labelX = canvas_width/2 + (pieRadius / 2) * Math.cos(start_angle + slice_angle/2);
-            labelX -= labelX*0.1;
+            labelX -= labelX*0.05;
             var labelY = canvas_height/2 + (pieRadius / 2) * Math.sin(start_angle + slice_angle/2);
+            //labelY += labelY*0.05;
 
             if (this.options.doughnutHoleSize){
                 var offset = (pieRadius * this.options.doughnutHoleSize ) / 2;
@@ -72,21 +97,29 @@ class Piechart{
                 labelY = canvas_height/2 + (offset + pieRadius / 2) * Math.sin(start_angle + slice_angle/2);
 
             }
-            var labelText = Math.round(100 * val / total_value);
-            this.ctx.fillStyle = "white";
-            this.ctx.font = "bold 20px Arial";
-            this.ctx.fillText(labelText+"%", labelX,labelY);
+            var percents = Math.round(100 * val / total_value)
+            if (percents >= 3)
+            {
+                this.ctx.fillStyle = "white";
+                this.ctx.font = "bold 20px Arial";
+                this.ctx.fillText(percents+"%", labelX,labelY);
+            }
             start_angle += slice_angle;
         }
 
         if (this.options.legend){
             color_index = 0;
             var legendHTML = "";
+            var input_element = "";
             for (categ in this.options.data){
-                legendHTML += "<div><span style='display:inline-block;width:20px;background-color:"+this.colors[color_index++]+";'>&nbsp;</span> "+categ+"</div>";
+                legendHTML += "<div><span style='display:inline-block;width:20px;background-color:"+this.colors[color_index++]+";'>&nbsp;</span> "+categ;
+                legendHTML += `<input type="number" step="1000" name="pie-value-${categ}">`;
+                legendHTML += `%<input type="checkbox" name="pie-value-${categ}-in-percents"><Br></div>`;
             }
             this.options.legend.innerHTML = legendHTML;
         }
+
+        this.setFaviconTag()
     }
 }
 
@@ -137,8 +170,8 @@ var myVinyls = {
 }
 
 var myCanvas = document.getElementById("myCanvas");
-myCanvas.width = 400;
-myCanvas.height = 400;
+myCanvas.width = 460;
+myCanvas.height = 460;
 var ctx = myCanvas.getContext("2d");
 var myLegend = document.getElementById("myLegend");
 
@@ -146,10 +179,11 @@ var myDougnutChart = new Piechart(
     {
         canvas:myCanvas,
         data:myVinyls,
-        colors:["#fde23e"],//,"#f16e23", "#57d9ff","#937e88"],
+        colors:["#fde23e"],
         legend:myLegend
     }
 );
 
 
 myDougnutChart.draw();
+
