@@ -1,43 +1,53 @@
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Pie chart">
-    <meta name="author" content="Kirill Khalevin">
-    <title>Pie chart</title>
+  <html>
+  <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="Pie chart">
+      <meta name="author" content="Kirill Khalevin">
+      <title>Pie chart</title>
 
-    <link href="./assets/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        canvas {
-            width: 100%;
-            height: auto;
-        }
-    </style>
-</head>
-<body class="bg-light">
-    <div class="container">
+      <link href="./assets/css/bootstrap.min.css" rel="stylesheet">
+      <style>
+          canvas {
+              width: 100%;
+              height: auto;
+          }
 
-        <div class="row g-5">
-            <div class="col-md-5 col-lg-2">
+          .pt-3-half { padding-top: 1.4rem; }
 
-            </div>
-            <div class="col-md-7 col-lg-4">
-                <p><input type="checkbox" name="sum-known">Сумма известна? <input type="number" step="1000"></p><Br>
-                <div id="myLegend"></div>
-            </div>
-            <div class="col-md-5 col-lg-4">
-                <div style="width:460px;height:460px">
-                    <canvas id="myCanvas"></canvas>
-                </div>
-            </div>
+          input {
+            outline: none;
+            margin: 0;
+            border: 10px;
+            -webkit-box-shadow: none;
+            -moz-box-shadow: none;
+            box-shadow: none;
+            border-bottom: solid;
+            font-size: 14px;
+            font-family: inherit;
+            padding: 9px 0;
+            color: #666;
+            font-size: 16px;
+            font-weight: 500;
+          }
+
+
+      </style>
+  </head>
+  <body class="bg-light">
+      <div class="container">
+
+          <div id="pie-editor" class="row g-5">
+
+
           </div>
 
 
 
 
-    </div>
+      </div>
 
-    <script type="text/javascript" src="pie.js"></script>
-    <script src="./assets/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+      <script type="text/javascript" src="pie.js"></script>
+      <script src="./assets/js/bootstrap.bundle.min.js"></script>
+  </body>
+  </html>
