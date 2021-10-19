@@ -36,17 +36,23 @@ function createNode(tag, parentNode=document.body, options={})
 class Piechart{
     constructor(options)
     {
-        this.pie_colors_default = ["#F68D64","#FEAE65","#E6F69D","#AADEA7","#64C2A6","#6DE7BB","#FFF1C9","#F7B7A3","#EA5F89","#9B3192","#57167E","#2B0B3F"];
+        this.pie_colors_default = ["#F68D64","#FEAE65","#E6F69D","#AADEA7","#64C2A6","#6DE7BB","#FFD1B9","#F7B7A3","#EA5F89","#9B3192","#57167E","#2B0B3F"];
         this.colors = options.colors.concat(this.pie_colors_default);
         this.shaded_colors = this.colors.map(function(color) { return shadeColor(color, -20); } );
         this.removedColors = [];
         this.nextColor = 0;
 
         this.chartID = this.randomID();
+        this.rowPrefixes = {
+            "row": "row-",
+            "rowValue": "row-value-",
+            "rowItem": "row-item-",
+            "rowRemove": "row-remove-"
+        }
         this.options = options;
         this.canvasSize = options.canvasSize;
         this.parentNode = options.parentNode;
-        this.tableRowsID = {};
+        this.tableRowsID = [];
         this.generateHTMLSkelet();
         this.addRows();
     }
@@ -75,7 +81,8 @@ class Piechart{
     {
         var currentColor = this.getNextColor();
         var rowID = this.randomID();
-        var tr = createNode("tr", this.table, {"id": "row-".concat(rowID)});
+        this.tableRowsID.push(rowID);
+        var tr = createNode("tr", this.table, {"id": this.rowPrefixes["row"].concat(rowID)});
         var valuePos = 0;
         tdTypes.forEach((tdType) => {
             var td = createNode("td", tr);
@@ -90,20 +97,25 @@ class Piechart{
                     "type": "button",
                     "className": "btn btn-danger btn-rounded btn-sm my-0",
                     "innerText": "X",
-                    "id": "row-remove-".concat(rowID)
+                    "id": this.rowPrefixes["rowRemove"].concat(rowID)
                 })
+                btn.addEventListener('click', (event) => {
+                    this.removedColors.push(currentColor);
+                    delete this.tableRowsID[rowID];
+                    tr.remove();
+                });
             } else {
-                //td.style.backgroundColor = currentColor;
-                //td.style.opacity = "0.5";
                 if (['string', "number"].includes(tdType)){
                     var nodeOptions = {
                         "placeholder": "Item",
-                        "value": values[valuePos]
+                        "value": values[valuePos],
+                        "id": this.rowPrefixes["rowItem"].concat(rowID)
                     }
                     if (tdType == "number") {
                         nodeOptions["type"] = "number";
                         nodeOptions["step"] = "1000";
                         nodeOptions["placeholder"] = "0";
+                        nodeOptions["id"] = this.rowPrefixes["rowValue"].concat(rowID);
                     }
                     var input = createNode("input", td, nodeOptions)
                 }
