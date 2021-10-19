@@ -76,7 +76,23 @@ class Piechart{
         return (yiq >= 128) ? '#616A6B' : 'white';
     }
 
-    //types = empty, string, number, remove
+    getItemValue(rowID){
+        var item = document.getElementById(this.rowPrefixes["rowItem"].concat(rowID)).value;
+        var value = parseInt(document.getElementById(this.rowPrefixes["rowValue"].concat(rowID)).value);
+        return [item, value];
+    }
+
+    generateDataFromFront(){
+        var data = {}
+        this.tableRowsID.forEach((rowID) => {
+
+            var dataRow = this.getItemValue(rowID);
+            data[dataRow[0]] = dataRow[1];
+        });
+        this.options.data = data;
+    }
+
+    //types = color-view, string, number, remove
     addRow(values, tdTypes)
     {
         var currentColor = this.getNextColor();
@@ -86,7 +102,7 @@ class Piechart{
         var valuePos = 0;
         tdTypes.forEach((tdType) => {
             var td = createNode("td", tr);
-            if (tdType == 'empty') {
+            if (tdType == 'color-view') {
                 td.style.background = currentColor;
                 td.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;";
             }
@@ -101,8 +117,9 @@ class Piechart{
                 })
                 btn.addEventListener('click', (event) => {
                     this.removedColors.push(currentColor);
-                    delete this.tableRowsID[rowID];
+                    delete this.tableRowsID[this.tableRowsID.indexOf(rowID)];
                     tr.remove();
+                    this.draw();
                 });
             } else {
                 if (['string', "number"].includes(tdType)){
@@ -118,6 +135,12 @@ class Piechart{
                         nodeOptions["id"] = this.rowPrefixes["rowValue"].concat(rowID);
                     }
                     var input = createNode("input", td, nodeOptions)
+                    if (tdType == "number")
+                    {
+                        input.addEventListener('input', (event) => {
+                            this.draw();
+                        });
+                    }
                 }
             }
             valuePos++;
@@ -128,7 +151,7 @@ class Piechart{
     {
         for (var categ in this.options.data){
             var values = ["", categ, this.options.data[categ]]
-            var tdTypes = ["empty", "string", "number", "remove"]
+            var tdTypes = ["color-view", "string", "number", "remove"]
             this.addRow(values, tdTypes)
         }
     }
@@ -254,6 +277,8 @@ class Piechart{
     }
 
     draw(){
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.generateDataFromFront();
         this.drawSectors();
         this.drawPercentLabels();
         this.setFaviconTag();
