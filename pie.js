@@ -38,6 +38,8 @@ function createNode(tag, parentNode=document.body, options={})
 class Piechart{
     constructor(options)
     {
+        this.percentMinToView = 4;
+
         this.pie_colors_default = ["#F68D64","#FEAE65","#E6F69D","#AADEA7","#64C2A6","#6DE7BB","#FFD1B9","#F7B7A3","#EA5F89","#9B3192","#57167E","#2B0B3F"];
         this.colors = options.colors.concat(this.pie_colors_default);
         this.shaded_colors = this.colors.map(function(color) { return shadeColor(color, -20); } );
@@ -279,7 +281,7 @@ class Piechart{
 
             }
             var percents = Math.round(100 * val / total_value)
-            if (percents >= 3)
+            if (percents >= this.percentMinToView)
             {
                 this.ctx.fillStyle = "white";
                 this.ctx.font = "bold 20px Arial";
@@ -329,19 +331,19 @@ var myVinyls = {
 };
 
 var myVinyls = {
-    "1" : 2,
-    "2" : 2,
-    "3" : 2,
-    "4" : 2,
-    "5" : 2,
-    "6" : 2,
-    "7" : 2,
-    "8" : 2,
-    "9" : 2,
-    "10" : 2,
-    "11" : 2,
-    "12" : 2,
-    "13" : 2,
+    "item-note-1" : 2,
+    "item-note-2" : 3,
+    "item-note-3" : 5,
+    "item-note-4" : 5,
+    "item-note-5" : 6,
+    "item-note-6" : 7,
+    "item-note-7" : 8,
+    "item-note-8" : 9,
+    "item-note-9" : 10,
+    "item-note-10" : 11,
+    "item-note-11" : 12,
+    "item-note-12" : 13,
+    "item-note-13" : 14,
 }
 
 const editor = document.getElementById("pie-editor");
