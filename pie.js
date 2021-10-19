@@ -1,4 +1,6 @@
 
+const rgba2hex = (rgba) => `#${rgba.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+\.{0,1}\d*))?\)$/).slice(1).map((n, i) => (i === 3 ? Math.round(parseFloat(n) * 255) : parseFloat(n)).toString(16).padStart(2, '0').replace('NaN', '')).join('')}`
+
 function isNode(node) { return node instanceof Element; }
 
 function findNode(id_or_class, whichClass=0)
@@ -45,6 +47,7 @@ class Piechart{
         this.chartID = this.randomID();
         this.rowPrefixes = {
             "row": "row-",
+            "rowColor": "row-color-",
             "rowValue": "row-value-",
             "rowItem": "row-item-",
             "rowRemove": "row-remove-"
@@ -53,6 +56,8 @@ class Piechart{
         this.canvasSize = options.canvasSize;
         this.parentNode = options.parentNode;
         this.tableRowsID = [];
+        this.tableRowsColors = [];
+        this.tableRowsShadedColors = [];
         this.generateHTMLSkelet();
         this.addRows();
     }
@@ -76,18 +81,25 @@ class Piechart{
         return (yiq >= 128) ? '#616A6B' : 'white';
     }
 
+
+
     getItemValue(rowID){
         var item = document.getElementById(this.rowPrefixes["rowItem"].concat(rowID)).value;
         var value = parseInt(document.getElementById(this.rowPrefixes["rowValue"].concat(rowID)).value);
-        return [item, value];
+
+        var color = rgba2hex(document.getElementById(this.rowPrefixes["rowColor"].concat(rowID)).style.background);
+        return [item, value, color];
     }
 
     generateDataFromFront(){
         var data = {}
+        this.tableRowsColors = [];
+        this.tableRowsShadedColors = [];
         this.tableRowsID.forEach((rowID) => {
-
             var dataRow = this.getItemValue(rowID);
             data[dataRow[0]] = dataRow[1];
+            this.tableRowsColors.push(dataRow[2]);
+            this.tableRowsShadedColors.push(shadeColor(dataRow[2], -20));
         });
         this.options.data = data;
     }
@@ -105,6 +117,7 @@ class Piechart{
             if (tdType == 'color-view') {
                 td.style.background = currentColor;
                 td.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;";
+                td.id = this.rowPrefixes["rowColor"].concat(rowID);
             }
             else if (tdType == 'remove')
             {
@@ -222,7 +235,7 @@ class Piechart{
                 val = this.options.data[categ];
                 var slice_angle = 2 * Math.PI * val / total_value;
 
-                var current_colors = shift == 0 ? this.colors : this.shaded_colors;
+                var current_colors = shift == 0 ? this.tableRowsColors : this.tableRowsShadedColors;
                 this.drawPieSlice(
                     this.ctx,
                     this.canvas.width/2-shift,
