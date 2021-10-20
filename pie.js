@@ -96,7 +96,7 @@ class Piechart{
         var currentColor = this.colors[this.nextColor % this.colors.length];
         const colorsMinMixed = 3
         if (this.colors.length >= colorsMinMixed && this.tableRowsColors.length >= 1)
-        {
+        {ыещкф
             while ([this.tableRowsColors[0], this.tableRowsColors[this.tableRowsColors.length-1]].includes(currentColor))
             {
                 this.nextColor += 1;
