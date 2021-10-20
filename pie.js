@@ -184,9 +184,18 @@ class Piechart{
             var td = createNode("td", tr);
             if (tdType == 'color-view') {
                 var rowCount = this.tableRowsID.length;
-                td.style.background = rowCount <= this.tableRowsColors.length ? this.tableRowsColors[rowCount-1] : currentColor;
-                td.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;";
+                currentColor = rowCount <= this.tableRowsColors.length ? this.tableRowsColors[rowCount-1] : currentColor;
+                td.style.background = currentColor
+                td.innerHTML = "";
                 td.id = this.rowPrefixes["rowColor"].concat(rowID);
+
+                var colorPicker = createNode("input", td, {
+                    "type": "color",
+                    "style": "border-color: transparent;",
+                    "value": currentColor
+                });
+                colorPicker.addEventListener("input", (event) => {td.style.background = event.currentTarget.value; this.draw();});
+                td.addEventListener("click", (evenet) => {colorPicker.click();});
             }
             else if (tdType == 'remove')
             {
@@ -209,7 +218,8 @@ class Piechart{
                     var nodeOptions = {
                         "placeholder": "Item",
                         "value": values[valuePos],
-                        "id": this.rowPrefixes["rowItem"].concat(rowID)
+                        "id": this.rowPrefixes["rowItem"].concat(rowID),
+                        "className" : "input-pie-data"
                     }
                     if (tdType == "number") {
                         nodeOptions["type"] = "number";
