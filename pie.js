@@ -1,5 +1,6 @@
 
 const rgba2hex = (rgba) => rgba[0] === "#" ? rgba :`#${rgba.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+\.{0,1}\d*))?\)$/).slice(1).map((n, i) => (i === 3 ? Math.round(parseFloat(n) * 255) : parseFloat(n)).toString(16).padStart(2, '0').replace('NaN', '')).join('')}`
+const formatNum = (num, localeString="en") => parseFloat(num).toLocaleString(localeString);
 
 function isNode(node) { return node instanceof Element; }
 
@@ -38,6 +39,7 @@ function createNode(tag, parentNode=document.body, options={})
 class Piechart{
     constructor(options)
     {
+        this.itemLocalStorage = "piechart-data";
         this.percentMinToView = 4;
 
         this.pie_colors_default = ["#F68D64","#FEAE65","#E6F69D","#AADEA7","#64C2A6","#6DE7BB","#FFD1B9","#F7B7A3","#EA5F89","#9B3192","#57167E","#2B0B3F"];
@@ -56,13 +58,33 @@ class Piechart{
             "rowEmpty": "row-empty-"
         }
         this.options = options;
-        this.canvasSize = options.canvasSize;
-        this.parentNode = options.parentNode;
         this.tableRowsID = [];
         this.tableRowsColors = [];
         this.tableRowsShadedColors = [];
+        this.canvasSize = options.canvasSize;
+        this.parentNode = options.parentNode;
+        if (this.options.dataFromLocalStorage){this.loadDataFromLocalStorage();}
+        if(!this.options.data || Object.keys(this.options.data)==false){this.setupDefaultTemplate();}
         this.generateHTMLSkelet();
-        this.addRows();
+    }
+
+    setupDefaultTemplate()
+    {
+        this.options.data = {
+            0: {"item" : "Rent room", "value" : 16500},
+            1: {"item" : "Food", "value" : 15000},
+            2: {"item" : "Clothes", "value" : 10000},
+            3: {"item" : "Investments", "value" : 8000},
+            4: {"item" : "Parents", "value" : 8000},
+            5: {"item" : "Subscription Hexlet", "value" : 3900},
+            6: {"item" : "Transport/Fitness", "value" : 2250+1750},
+            7: {"item" : "mobile/home internet", "value" : 600+400},
+        }
+        var count = 0;
+        var sum = 0;
+        var total = 80000;
+        for (var key in Object.keys(this.options.data)) {count++; sum += this.options.data[key]["value"];}
+        this.options.data[count] = {"item" : "entertainment and other", "value" : total-sum}
     }
 
     randomID(){
@@ -72,20 +94,18 @@ class Piechart{
     getNextColor(){
         if(this.nextColor % this.colors.length == 0 && this.nextColor > 0) {this.nextColor++;}
         var currentColor = this.colors[this.nextColor % this.colors.length];
+        const colorsMinMixed = 3
+        if (this.colors.length >= colorsMinMixed && this.tableRowsColors.length >= 1)
+        {
+            while ([this.tableRowsColors[0], this.tableRowsColors[this.tableRowsColors.length-1]].includes(currentColor))
+            {
+                this.nextColor += 1;
+                currentColor = this.colors[this.nextColor % this.colors.length];
+            }
+        }
         this.removedColors.length > 0 ? currentColor = this.removedColors.pop() : this.nextColor += 1;
         return currentColor;
     }
-
-    //https://24ways.org/2010/calculating-color-contrast
-    getContrastYIQ(hexcolor){
-        var r = parseInt(hexcolor.substr(1,2),16);
-        var g = parseInt(hexcolor.substr(3,2),16);
-        var b = parseInt(hexcolor.substr(5,2),16);
-        var yiq = ((r*299)+(g*587)+(b*114))/1000;
-        return (yiq >= 128) ? '#616A6B' : 'white';
-    }
-
-
 
     getItemValue(rowID){
         var item = document.getElementById(this.rowPrefixes["rowItem"].concat(rowID)).value;
@@ -111,6 +131,43 @@ class Piechart{
             pos += 1;
         });
         this.options.data = data;
+        if(this.options.saveDataToLocalStorage) {this.saveDataToLocalStorage();}
+    }
+
+    calcSum()
+    {
+        var sum = 0;
+        for( var posItem in this.options.data)
+        {
+            if (this.options.data[posItem]["value"]) {sum += this.options.data[posItem]["value"];}
+        }
+        this.sum = sum;
+    }
+
+    saveDataToLocalStorage(){
+        var colors = {
+            "colors": {
+                "tableRowsColors": this.tableRowsColors,
+                "removedColors": this.removedColors,
+                //"nextColor": this.nextColor
+            }
+        }
+        localStorage.setItem(this.itemLocalStorage, JSON.stringify(Object.assign(this.options.data, colors)));
+    }
+
+    loadDataFromLocalStorage(){
+        var data = JSON.parse(localStorage.getItem(this.itemLocalStorage));
+        if(data)
+        {
+            if(data["colors"])
+            {
+                this.tableRowsColors = data["colors"]["tableRowsColors"];
+                this.tableRowsShadedColors = this.tableRowsColors.map(function(color) { return shadeColor(color, -20); } );
+                this.removedColors = data["colors"]["removedColors"];
+                delete data["colors"];
+            }
+            this.options.data = data;
+        }
     }
 
     //types = empty, color-view, string, number, remove
@@ -126,7 +183,8 @@ class Piechart{
         tdTypes.forEach((tdType) => {
             var td = createNode("td", tr);
             if (tdType == 'color-view') {
-                td.style.background = currentColor;
+                var rowCount = this.tableRowsID.length;
+                td.style.background = rowCount <= this.tableRowsColors.length ? this.tableRowsColors[rowCount-1] : currentColor;
                 td.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;";
                 td.id = this.rowPrefixes["rowColor"].concat(rowID);
             }
@@ -210,16 +268,22 @@ class Piechart{
 
     generateHTMLSkelet()
     {
-        this.leftPart = createNode("div", this.parentNode, {"className": "col-md-7 col-lg-5"});
+        this.leftPart = createNode("div", this.parentNode, {
+            "className": "col-md-8 col-lg-6",
+            "style.margin": "100px auto auto",
+        });
         this.table = createNode("table", this.leftPart,
                     {"className": "table table-responsive-md text-center", "id": "table-".concat(this.chartID)});
 
 
-        this.rightPart = createNode("div", this.parentNode, {"className": "col-md-7 col-lg-5"});
+        this.rightPart = createNode("div", this.parentNode, {"className": "col-md-8 col-lg-6", "style.margin": "50px auto auto",});
         this.canvas = createNode("canvas", this.rightPart, {"id": "canvas-".concat(this.chartID)});
         this.canvas.width = this.canvasSize;
         this.canvas.height = this.canvasSize;
         this.ctx = this.canvas.getContext("2d");
+        this.sumBlock = createNode("div", this.rightPart, {"className": "text-center"});
+        this.sumBlock.style.width = this.canvas.width;
+        this.addRows();
     }
 
     drawPieSlice(ctx,centerX, centerY, radius, startAngle, endAngle, color ){
@@ -257,21 +321,17 @@ class Piechart{
 
     drawSectors()
     {
-        var total_value = 0;
+        var total_value = this.sum;
         var shift = 10;
         var coef_padding = 0.03
-
-        for (var posItem in this.options.data){
-            var val = this.options.data[posItem]["value"];
-            total_value += val;
-        }
 
         while(shift>=0)
         {
             var color_index = 0;
             var start_angle = 0;
-            for (posItem in this.options.data){
-                val = this.options.data[posItem]["value"];
+            for (var posItem in this.options.data){
+                var val = this.options.data[posItem]["value"];
+                if(!val) {val=0;}
                 var slice_angle = 2 * Math.PI * val / total_value;
 
                 var current_colors = shift == 0 ? this.tableRowsColors : this.tableRowsShadedColors;
@@ -294,16 +354,12 @@ class Piechart{
 
     drawPercentLabels()
     {
-        var total_value = 0;
+        var total_value = this.sum;
+        var start_angle = 0;
 
         for (var posItem in this.options.data){
             var val = this.options.data[posItem]["value"];
-            total_value += val;
-        }
-
-        var start_angle = 0;
-        for (posItem in this.options.data){
-            var val = this.options.data[posItem]["value"];
+            if(!val) {val=0;}
             var slice_angle = 2 * Math.PI * val / total_value;
             var pieRadius = Math.min(this.canvas.width/2,this.canvas.height/2);
             var labelX = this.canvas.width/2 + (pieRadius / 2) * Math.cos(start_angle + slice_angle/2);
@@ -331,6 +387,8 @@ class Piechart{
     draw(){
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.generateDataFromFront();
+        this.calcSum();
+        this.sumBlock.innerText = formatNum(this.sum);
         this.drawSectors();
         this.drawPercentLabels();
         this.setFaviconTag();
@@ -376,6 +434,10 @@ var myVinyls = {
     12 : { "item":"item-note-13", "value":14}
 }
 
+
+var myVinyls = {
+}
+
 const editor = document.getElementById("pie-editor");
 const canvasSize = 460;
 
@@ -384,6 +446,8 @@ var myDougnutChart = new Piechart(
         parentNode:editor,
         canvasSize:canvasSize,
         data:myVinyls,
+        dataFromLocalStorage:true,
+        saveDataToLocalStorage:true,
         colors:["#fde23e"],
     }
 );
