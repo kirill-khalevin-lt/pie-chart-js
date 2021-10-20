@@ -1,5 +1,5 @@
 
-const rgba2hex = (rgba) => `#${rgba.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+\.{0,1}\d*))?\)$/).slice(1).map((n, i) => (i === 3 ? Math.round(parseFloat(n) * 255) : parseFloat(n)).toString(16).padStart(2, '0').replace('NaN', '')).join('')}`
+const rgba2hex = (rgba) => rgba[0] === "#" ? rgba :`#${rgba.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+\.{0,1}\d*))?\)$/).slice(1).map((n, i) => (i === 3 ? Math.round(parseFloat(n) * 255) : parseFloat(n)).toString(16).padStart(2, '0').replace('NaN', '')).join('')}`
 
 function isNode(node) { return node instanceof Element; }
 
@@ -52,7 +52,8 @@ class Piechart{
             "rowColor": "row-color-",
             "rowValue": "row-value-",
             "rowItem": "row-item-",
-            "rowRemove": "row-remove-"
+            "rowRemove": "row-remove-",
+            "rowEmpty": "row-empty-"
         }
         this.options = options;
         this.canvasSize = options.canvasSize;
@@ -69,6 +70,7 @@ class Piechart{
     }
 
     getNextColor(){
+        if(this.nextColor % this.colors.length == 0 && this.nextColor > 0) {this.nextColor++;}
         var currentColor = this.colors[this.nextColor % this.colors.length];
         this.removedColors.length > 0 ? currentColor = this.removedColors.pop() : this.nextColor += 1;
         return currentColor;
@@ -94,24 +96,32 @@ class Piechart{
     }
 
     generateDataFromFront(){
-        var data = {}
+        var data = {};
         this.tableRowsColors = [];
         this.tableRowsShadedColors = [];
+        var pos = 0;
         this.tableRowsID.forEach((rowID) => {
             var dataRow = this.getItemValue(rowID);
-            data[dataRow[0]] = dataRow[1];
+            data[pos] = {};
+            data[pos]["item"] = dataRow[0];
+            data[pos]["value"] = dataRow[1];
+            //data[dataRow[0]] = dataRow[1];
             this.tableRowsColors.push(dataRow[2]);
             this.tableRowsShadedColors.push(shadeColor(dataRow[2], -20));
+            pos += 1;
         });
         this.options.data = data;
+        console.log(this.options);
     }
 
     //types = color-view, string, number, remove
-    addRow(values, tdTypes)
+    addRow(values, tdTypes, waitNewRow=false)
     {
-        var currentColor = this.getNextColor();
         var rowID = this.randomID();
-        this.tableRowsID.push(rowID);
+        if (!waitNewRow) {
+            this.tableRowsID.push(rowID);
+            var currentColor = this.getNextColor();
+        }
         var tr = createNode("tr", this.table, {"id": this.rowPrefixes["row"].concat(rowID)});
         var valuePos = 0;
         tdTypes.forEach((tdType) => {
@@ -128,16 +138,17 @@ class Piechart{
                     "type": "button",
                     "className": "btn btn-danger btn-rounded btn-sm my-0",
                     "innerText": "X",
+                    "style.display": waitNewRow ? "none": "",
                     "id": this.rowPrefixes["rowRemove"].concat(rowID)
                 })
                 btn.addEventListener('click', (event) => {
-                    this.removedColors.push(currentColor);
-                    delete this.tableRowsID[this.tableRowsID.indexOf(rowID)];
+                    var thisRowID = event.currentTarget.id.split(this.rowPrefixes["rowRemove"]).pop();
+                    this.removedColors.push(document.getElementById(this.rowPrefixes["rowColor"].concat(thisRowID)).style.background);
+                    delete this.tableRowsID[this.tableRowsID.indexOf(thisRowID)];
                     tr.remove();
                     this.draw();
                 });
-            } else {
-                if (['string', "number"].includes(tdType)){
+            } else if (['string', "number"].includes(tdType)) {
                     var nodeOptions = {
                         "placeholder": "Item",
                         "value": values[valuePos],
@@ -153,10 +164,26 @@ class Piechart{
                     if (tdType == "number")
                     {
                         input.addEventListener('input', (event) => {
+                            if(waitNewRow)
+                            {
+                                var thisRowID = event.currentTarget.id.split(this.rowPrefixes["rowValue"]).pop();
+                                this.tableRowsID.push(thisRowID);
+                                var btnRemove = document.getElementById(this.rowPrefixes["rowRemove"].concat(thisRowID));
+                                btnRemove.style.display = "";
+                                var currentColor = this.getNextColor();
+                                var colorView = findNode(this.rowPrefixes["rowEmpty"].concat(thisRowID));
+                                colorView.style.background = currentColor;
+                                colorView.id = this.rowPrefixes["rowColor"].concat(thisRowID);
+                                colorView.className = "";
+                                waitNewRow = false;
+                                this.addDynamicNewRow();
+                            }
                             this.draw();
                         });
                     }
-                }
+            } else { //empty
+                td.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;";
+                td.className = this.rowPrefixes["rowEmpty"].concat(rowID);
             }
             valuePos++;
         });
@@ -164,11 +191,22 @@ class Piechart{
 
     addRows()
     {
-        for (var categ in this.options.data){
-            var values = ["", categ, this.options.data[categ]]
+        for (var posItem in this.options.data){
+            var item = this.options.data[posItem]["item"]
+            var value = this.options.data[posItem]["value"]
+            var values = ["", item, value]
             var tdTypes = ["color-view", "string", "number", "remove"]
             this.addRow(values, tdTypes)
         }
+        this.addDynamicNewRow();
+    }
+
+    addDynamicNewRow()
+    {
+        const values = ["","",""];
+        const tdTypes = ["empty", "string", "number", "remove"];
+        const waitNewRow = true;
+        this.addRow(values, tdTypes, waitNewRow);
     }
 
     generateHTMLSkelet()
@@ -224,8 +262,8 @@ class Piechart{
         var shift = 10;
         var coef_padding = 0.03
 
-        for (var categ in this.options.data){
-            var val = this.options.data[categ];
+        for (var posItem in this.options.data){
+            var val = this.options.data[posItem]["value"];
             total_value += val;
         }
 
@@ -233,8 +271,8 @@ class Piechart{
         {
             var color_index = 0;
             var start_angle = 0;
-            for (categ in this.options.data){
-                val = this.options.data[categ];
+            for (posItem in this.options.data){
+                val = this.options.data[posItem]["value"];
                 var slice_angle = 2 * Math.PI * val / total_value;
 
                 var current_colors = shift == 0 ? this.tableRowsColors : this.tableRowsShadedColors;
@@ -245,7 +283,7 @@ class Piechart{
                     Math.min(this.canvas.width/2-this.canvas.width*coef_padding,this.canvas.height/2-this.canvas.height*coef_padding),
                     start_angle,
                     start_angle+slice_angle,
-                    current_colors[color_index%this.colors.length]
+                    current_colors[color_index%this.tableRowsColors.length]
                 );
 
                 start_angle += slice_angle;
@@ -259,14 +297,14 @@ class Piechart{
     {
         var total_value = 0;
 
-        for (var categ in this.options.data){
-            var val = this.options.data[categ];
+        for (var posItem in this.options.data){
+            var val = this.options.data[posItem]["value"];
             total_value += val;
         }
 
         var start_angle = 0;
-        for (categ in this.options.data){
-            var val = this.options.data[categ];
+        for (posItem in this.options.data){
+            var val = this.options.data[posItem]["value"];
             var slice_angle = 2 * Math.PI * val / total_value;
             var pieRadius = Math.min(this.canvas.width/2,this.canvas.height/2);
             var labelX = this.canvas.width/2 + (pieRadius / 2) * Math.cos(start_angle + slice_angle/2);
@@ -331,19 +369,19 @@ var myVinyls = {
 };
 
 var myVinyls = {
-    "item-note-1" : 2,
-    "item-note-2" : 3,
-    "item-note-3" : 5,
-    "item-note-4" : 5,
-    "item-note-5" : 6,
-    "item-note-6" : 7,
-    "item-note-7" : 8,
-    "item-note-8" : 9,
-    "item-note-9" : 10,
-    "item-note-10" : 11,
-    "item-note-11" : 12,
-    "item-note-12" : 13,
-    "item-note-13" : 14,
+    0 : { "item":"item-note-1", "value":2},
+    1 : { "item":"item-note-2", "value":3},
+    2 : { "item":"item-note-3", "value":5},
+    3 : { "item":"item-note-4", "value":5},
+    4 : { "item":"item-note-5", "value":6},
+    5 : { "item":"item-note-6", "value":7},
+    6 : { "item":"item-note-7", "value":8},
+    7 : { "item":"item-note-8", "value":9},
+    8 : { "item":"item-note-9", "value":10},
+    9 : { "item":"item-note-10", "value":11},
+    10 : { "item":"item-note-11", "value":12},
+    11 : { "item":"item-note-12", "value":13},
+    12 : { "item":"item-note-13", "value":14}
 }
 
 const editor = document.getElementById("pie-editor");
