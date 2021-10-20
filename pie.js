@@ -111,10 +111,9 @@ class Piechart{
             pos += 1;
         });
         this.options.data = data;
-        console.log(this.options);
     }
 
-    //types = color-view, string, number, remove
+    //types = empty, color-view, string, number, remove
     addRow(values, tdTypes, waitNewRow=false)
     {
         var rowID = this.randomID();
@@ -362,13 +361,6 @@ function shadeColor(color, percent) {
 }
 
 var myVinyls = {
-    "Classical music": 10,
-    "Alternative rock": 14,
-    "Pop": 1,
-    "Jazz": 12
-};
-
-var myVinyls = {
     0 : { "item":"item-note-1", "value":2},
     1 : { "item":"item-note-2", "value":3},
     2 : { "item":"item-note-3", "value":5},
@@ -387,18 +379,14 @@ var myVinyls = {
 const editor = document.getElementById("pie-editor");
 const canvasSize = 460;
 
-
-
 var myDougnutChart = new Piechart(
     {
         parentNode:editor,
         canvasSize:canvasSize,
         data:myVinyls,
         colors:["#fde23e"],
-        //table:tableValues
     }
 );
-
 
 myDougnutChart.draw();
 
