@@ -41,6 +41,7 @@ class Piechart{
     {
         this.itemLocalStorage = "piechart-data";
         this.percentMinToView = 4;
+        this.shiftPiechart = 10;
 
         this.pie_colors_default = ["#F68D64","#FEAE65","#E6F69D","#AADEA7","#64C2A6","#6DE7BB","#FFD1B9","#F7B7A3","#EA5F89","#9B3192","#57167E","#2B0B3F"];
         this.colors = options.colors.concat(this.pie_colors_default);
@@ -170,6 +171,21 @@ class Piechart{
         }
     }
 
+    tdColorPicker(parentNode, currentColor, rowID)
+    {
+        parentNode.style.background = currentColor
+        console.log(currentColor);
+        parentNode.innerHTML = "";
+        parentNode.id = this.rowPrefixes["rowColor"].concat(rowID);
+        var colorPicker = createNode("input", parentNode, {
+            "type": "color",
+            "style": "border-color: transparent;",
+            "value": rgba2hex(currentColor)
+        });
+        colorPicker.addEventListener("input", (event) => {parentNode.style.background = event.currentTarget.value; this.draw();});
+        parentNode.addEventListener("click", (event) => {colorPicker.click();});
+        return colorPicker;
+    }
     //types = empty, color-view, string, number, remove
     addRow(values, tdTypes, waitNewRow=false)
     {
@@ -185,17 +201,9 @@ class Piechart{
             if (tdType == 'color-view') {
                 var rowCount = this.tableRowsID.length;
                 currentColor = rowCount <= this.tableRowsColors.length ? this.tableRowsColors[rowCount-1] : currentColor;
-                td.style.background = currentColor
-                td.innerHTML = "";
-                td.id = this.rowPrefixes["rowColor"].concat(rowID);
+                this.tdColorPicker(td, currentColor, rowID);
 
-                var colorPicker = createNode("input", td, {
-                    "type": "color",
-                    "style": "border-color: transparent;",
-                    "value": currentColor
-                });
-                colorPicker.addEventListener("input", (event) => {td.style.background = event.currentTarget.value; this.draw();});
-                td.addEventListener("click", (evenet) => {colorPicker.click();});
+
             }
             else if (tdType == 'remove')
             {
@@ -239,8 +247,9 @@ class Piechart{
                                 btnRemove.style.display = "";
                                 var currentColor = this.getNextColor();
                                 var colorView = findNode(this.rowPrefixes["rowEmpty"].concat(thisRowID));
-                                colorView.style.background = currentColor;
-                                colorView.id = this.rowPrefixes["rowColor"].concat(thisRowID);
+                                this.tdColorPicker(colorView, currentColor, thisRowID);
+                                //colorView.style.background = currentColor;
+                                //colorView.id = this.rowPrefixes["rowColor"].concat(thisRowID);
                                 colorView.className = "";
                                 waitNewRow = false;
                                 this.addDynamicNewRow();
@@ -281,17 +290,23 @@ class Piechart{
         this.leftPart = createNode("div", this.parentNode, {
             "className": "col-md-8 col-lg-6",
             "style.margin": "100px auto auto",
+            "style.paddingLeft": "0",
+            "style.paddingRight": "0"
         });
         this.table = createNode("table", this.leftPart,
                     {"className": "table table-responsive-md text-center", "id": "table-".concat(this.chartID)});
 
 
-        this.rightPart = createNode("div", this.parentNode, {"className": "col-md-8 col-lg-6", "style.margin": "50px auto auto",});
+        this.rightPart = createNode("div", this.parentNode, {"className": "col-md-6 col-lg-6", "style.margin": "50px auto auto",});
         this.canvas = createNode("canvas", this.rightPart, {"id": "canvas-".concat(this.chartID)});
         this.canvas.width = this.canvasSize;
         this.canvas.height = this.canvasSize;
         this.ctx = this.canvas.getContext("2d");
-        this.sumBlock = createNode("div", this.rightPart, {"className": "text-center"});
+        var sumBlockParent = createNode("div", this.rightPart, {
+            "className": "text-center piechart-sum-block-parent",
+            "style.width": this.canvas.width
+        });
+        this.sumBlock = createNode("div", sumBlockParent, {"className": "col-md-auto piechart-sum-block"});
         this.sumBlock.style.width = this.canvas.width;
         this.addRows();
     }
@@ -332,7 +347,7 @@ class Piechart{
     drawSectors()
     {
         var total_value = this.sum;
-        var shift = 10;
+        var shift = this.shiftPiechart;
         var coef_padding = 0.03
 
         while(shift>=0)
@@ -347,8 +362,8 @@ class Piechart{
                 var current_colors = shift == 0 ? this.tableRowsColors : this.tableRowsShadedColors;
                 this.drawPieSlice(
                     this.ctx,
-                    this.canvas.width/2-shift,
-                    this.canvas.height/2+shift,
+                    this.canvas.width/2-shift+this.shiftPiechart/2,
+                    this.canvas.height/2+shift-this.shiftPiechart/2,
                     Math.min(this.canvas.width/2-this.canvas.width*coef_padding,this.canvas.height/2-this.canvas.height*coef_padding),
                     start_angle,
                     start_angle+slice_angle,
@@ -379,8 +394,8 @@ class Piechart{
 
             if (this.options.doughnutHoleSize){
                 var offset = (pieRadius * this.options.doughnutHoleSize ) / 2;
-                labelX = this.canvas.width/2 + (offset + pieRadius / 2) * Math.cos(start_angle + slice_angle/2);
-                labelY = this.canvas.height/2 + (offset + pieRadius / 2) * Math.sin(start_angle + slice_angle/2);
+                labelX = this.canvas.width/2 + (offset + pieRadius / 2) * Math.cos(start_angle + slice_angle/2)+this.shiftPiechart/2;
+                labelY = this.canvas.height/2 + (offset + pieRadius / 2) * Math.sin(start_angle + slice_angle/2)-this.shiftPiechart/2;
 
             }
             var percents = Math.round(100 * val / total_value)
