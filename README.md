@@ -1,3 +1,5 @@
+https://kirill-khalevin-lt.github.io/pie-chart-js/
+
 <h1>pie-chart-js</h1>
 <p align="middle">
 <img alt="pie-chart" width="80%" src="https://github.com/kirill-khalevin-lt/pie-chart-js/blob/master/pie-chart.png"/>
