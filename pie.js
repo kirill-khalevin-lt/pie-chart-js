@@ -237,7 +237,7 @@ class Piechart{
                         "className" : "input-pie-data"
                     }
                     if (tdType == "number") {
-                        nodeOptions["type"] = "text";
+                        nodeOptions["type"] = "number";
                         nodeOptions["step"] = "1000";
                         nodeOptions["placeholder"] = "0";
                         nodeOptions["id"] = this.rowPrefixes["rowValue"].concat(rowID);
@@ -246,8 +246,6 @@ class Piechart{
                     if (tdType == "number")
                     {
                         input.addEventListener('input', (event) => {
-                            var onlyDigits = parseInt(event.currentTarget.value.toString().replace(/[^0-9.]/g, ''));
-                            event.currentTarget.value = onlyDigits;
                             if(waitNewRow)
                             {
                                 var thisRowID = event.currentTarget.id.split(this.rowPrefixes["rowValue"]).pop();
@@ -309,11 +307,23 @@ class Piechart{
         this.canvas.width = this.canvasSize;
         this.canvas.height = this.canvasSize;
         this.ctx = this.canvas.getContext("2d");
+        var parentClass = "text-center piechart-sum-block-parent";
         var sumBlockParent = createNode("div", this.rightPart, {
-            "className": "text-center piechart-sum-block-parent",
+            "className": parentClass,
             "style.width": this.canvas.width
         });
-        this.sumBlock = createNode("div", sumBlockParent, {"className": "col-md-auto piechart-sum-block", "style.width":this.canvas.width});
+        this.sumBlock = createNode("div", sumBlockParent, {
+            "className": "col-md-auto piechart-sum-block",
+            "style.width":this.canvas.width
+        });
+        /*var sumTotalBlockParent = createNode("div", this.rightPart, {
+            "className": parentClass,
+            "style.width": this.canvas.width
+        });
+        this.sumTotal = createNode("div", sumTotalBlockParent, {
+            "className": "col-md-auto piechart-sum-block",
+            "style.width":this.canvas.width
+        });*/
         this.addRows();
     }
 
