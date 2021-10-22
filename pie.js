@@ -304,7 +304,7 @@ class Piechart{
                     {"className": "table table-responsive-md text-center", "id": "table-".concat(this.chartID)});
 
 
-        this.rightPart = createNode("div", this.parentNode, {"className": "col-md-6 col-lg-6", "style.margin": "50px auto auto",});
+        this.rightPart = createNode("div", this.parentNode, {"className": "col-md-8 col-lg-6", "style.margin": "50px auto auto",});
         this.canvas = createNode("canvas", this.rightPart, {"id": "canvas-".concat(this.chartID)});
         this.canvas.width = this.canvasSize;
         this.canvas.height = this.canvasSize;
@@ -313,8 +313,7 @@ class Piechart{
             "className": "text-center piechart-sum-block-parent",
             "style.width": this.canvas.width
         });
-        this.sumBlock = createNode("div", sumBlockParent, {"className": "col-md-auto piechart-sum-block"});
-        this.sumBlock.style.width = this.canvas.width;
+        this.sumBlock = createNode("div", sumBlockParent, {"className": "col-md-auto piechart-sum-block", "style.width":this.canvas.width});
         this.addRows();
     }
 
