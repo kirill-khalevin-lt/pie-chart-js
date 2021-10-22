@@ -49,6 +49,8 @@ class Piechart{
         this.removedColors = [];
         this.nextColor = 0;
 
+        this.sumIsCustom = false; //✏✐✎✑✒
+
         this.chartID = this.randomID();
         this.rowPrefixes = {
             "row": "row-",
@@ -151,6 +153,9 @@ class Piechart{
                 "tableRowsColors": this.tableRowsColors,
                 "removedColors": this.removedColors,
                 //"nextColor": this.nextColor
+            },
+            "anyValues" : {
+                "sumIsCustom": this.sumIsCustom,
             }
         }
         localStorage.setItem(this.itemLocalStorage, JSON.stringify(Object.assign(this.options.data, colors)));
@@ -167,6 +172,11 @@ class Piechart{
                 this.removedColors = data["colors"]["removedColors"];
                 delete data["colors"];
             }
+            if(data["anyValues"])
+            {
+                this.sumIsCustom = data["anyValues"]["sumIsCustom"];
+                delete data["anyValues"];
+            }
             this.options.data = data;
         }
     }
@@ -174,7 +184,6 @@ class Piechart{
     tdColorPicker(parentNode, currentColor, rowID)
     {
         parentNode.style.background = currentColor
-        console.log(currentColor);
         parentNode.innerHTML = "";
         parentNode.id = this.rowPrefixes["rowColor"].concat(rowID);
         var colorPicker = createNode("input", parentNode, {
@@ -202,8 +211,6 @@ class Piechart{
                 var rowCount = this.tableRowsID.length;
                 currentColor = rowCount <= this.tableRowsColors.length ? this.tableRowsColors[rowCount-1] : currentColor;
                 this.tdColorPicker(td, currentColor, rowID);
-
-
             }
             else if (tdType == 'remove')
             {
@@ -230,7 +237,7 @@ class Piechart{
                         "className" : "input-pie-data"
                     }
                     if (tdType == "number") {
-                        nodeOptions["type"] = "number";
+                        nodeOptions["type"] = "text";
                         nodeOptions["step"] = "1000";
                         nodeOptions["placeholder"] = "0";
                         nodeOptions["id"] = this.rowPrefixes["rowValue"].concat(rowID);
@@ -239,6 +246,8 @@ class Piechart{
                     if (tdType == "number")
                     {
                         input.addEventListener('input', (event) => {
+                            var onlyDigits = parseInt(event.currentTarget.value.toString().replace(/[^0-9.]/g, ''));
+                            event.currentTarget.value = onlyDigits;
                             if(waitNewRow)
                             {
                                 var thisRowID = event.currentTarget.id.split(this.rowPrefixes["rowValue"]).pop();
@@ -248,8 +257,6 @@ class Piechart{
                                 var currentColor = this.getNextColor();
                                 var colorView = findNode(this.rowPrefixes["rowEmpty"].concat(thisRowID));
                                 this.tdColorPicker(colorView, currentColor, thisRowID);
-                                //colorView.style.background = currentColor;
-                                //colorView.id = this.rowPrefixes["rowColor"].concat(thisRowID);
                                 colorView.className = "";
                                 waitNewRow = false;
                                 this.addDynamicNewRow();
